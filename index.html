@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Mapping Tool</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="toolbar">
+        <button id="newNodeBtn" title="Create New Node">New Node</button>
+        <button id="saveBtn" title="Save Mind Map">Save</button>
+        <button id="loadBtn" title="Load Mind Map">Load</button>
+        <button id="exportBtn" title="Export Mind Map">Export</button>
+        <button id="testContextMenuBtn" title="Test Context Menu">Test Context Menu</button>
+    </div>
+
+    <div class="canvas-container">
+        <svg id="mindmap" class="mindmap-canvas">
+            <defs>
+                <!-- Arrow marker for connections -->
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                    refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#666"/>
+                </marker>
+            </defs>
+            <g id="connections"></g>
+            <g id="nodes"></g>
+        </svg>
+    </div>
+
+    <div id="contextMenu" class="context-menu">
+        <ul>
+            <li data-action="edit">Edit Text</li>
+            <li data-action="addChild">Add Child Node</li>
+            <li class="color-menu">
+                Change Color
+                <ul class="color-submenu">
+                    <li data-action="color" data-color="#ffffff">White</li>
+                    <li data-action="color" data-color="#ff6b6b">Red</li>
+                    <li data-action="color" data-color="#51cf66">Green</li>
+                    <li data-action="color" data-color="#339af0">Blue</li>
+                    <li data-action="color" data-color="#ffd43b">Yellow</li>
+                    <li data-action="color" data-color="#e1bee7">Purple</li>
+                    <li data-action="color" data-color="#ffe0b2">Orange</li>
+                    <li class="custom-color-item">
+                        <input type="color" id="customColorInput" value="#ffffff">
+                        <button data-action="customColor">Apply</button>
+                    </li>
+                </ul>
+            </li>
+            <li data-action="editConnection">Edit Connection Text</li>
+            <li data-action="delete">Delete Node</li>
+        </ul>
+    </div>
+
+    <script src="scripts/mindmap.js"></script>
+</body>
+</html>
