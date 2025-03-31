@@ -361,40 +361,39 @@ class MindMapManager {
         const nodeMap = new Map();
         
         // First pass: create all nodes
-        data.nodes.forEach(nodeData => {
-            const node = this.createNode(nodeData.x, nodeData.y);
-            node.updateText(nodeData.text);
-            node.updateColor(nodeData.color || '#ffffff');
-            
-            // Store in temporary map for second pass
-            nodeMap.set(nodeData.id, {
-                node,
-                parentId: nodeData.parentId
+        if (data.nodes) {
+            data.nodes.forEach(nodeData => {
+                const node = this.createNode(nodeData.x, nodeData.y);
+                node.updateText(nodeData.text);
+                node.updateColor(nodeData.color || '#ffffff');
+                
+                // Store in temporary map for second pass
+                nodeMap.set(nodeData.id, {
+                    node,
+                    parentId: nodeData.parentId
+                });
             });
-        });
+        }
         
-        // Second pass: establish parent-child relationships and create connections
+        // Second pass: establish parent-child relationships
         nodeMap.forEach(({node, parentId}) => {
             if (parentId) {
                 const parentData = nodeMap.get(parentId);
                 if (parentData) {
                     parentData.node.addChild(node);
-                    this.createConnection(parentData.node, node);
                 }
             }
         });
         
-        // Third pass: restore connection labels
+        // Third pass: create connections and restore their labels
         if (data.connections) {
             data.connections.forEach(connData => {
-                const sourceNode = this.nodes.get(connData.sourceId);
-                const targetNode = this.nodes.get(connData.targetId);
+                const sourceNode = nodeMap.get(connData.sourceId)?.node;
+                const targetNode = nodeMap.get(connData.targetId)?.node;
                 
                 if (sourceNode && targetNode) {
-                    const connectionId = `connection-${connData.sourceId}-${connData.targetId}`;
-                    const connection = this.connections.get(connectionId);
-                    
-                    if (connection && connData.label) {
+                    const connection = this.createConnection(sourceNode, targetNode);
+                    if (connData.label) {
                         connection.updateLabel(connData.label);
                     }
                 }

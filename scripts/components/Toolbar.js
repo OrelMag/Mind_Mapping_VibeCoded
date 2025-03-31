@@ -15,41 +15,51 @@ class Toolbar {
         this.storageManager = storageManager;
         this.exportManager = exportManager;
         
-        this.initializeEventListeners();
+        // Ensure DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.initializeEventListeners());
+        } else {
+            this.initializeEventListeners();
+        }
     }
 
     /**
      * Initialize event listeners for toolbar buttons
      */
     initializeEventListeners() {
-        // New Node button
-        const newNodeBtn = this.element.querySelector('#newNodeBtn');
-        if (newNodeBtn) {
-            newNodeBtn.addEventListener('click', () => this.createNewNode());
-        }
-        
-        // Save button
-        const saveBtn = this.element.querySelector('#saveBtn');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => this.saveMindMap());
-        }
-        
-        // Load button
-        const loadBtn = this.element.querySelector('#loadBtn');
-        if (loadBtn) {
-            loadBtn.addEventListener('click', () => this.loadMindMap());
-        }
-        
-        // Export button
-        const exportBtn = this.element.querySelector('#exportBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportMindMap());
-        }
-        
-        // Test Context Menu button (if present)
-        const testContextMenuBtn = this.element.querySelector('#testContextMenuBtn');
-        if (testContextMenuBtn) {
-            testContextMenuBtn.addEventListener('click', () => this.testContextMenu());
+        try {
+            console.log('Initializing toolbar event listeners...');
+            
+            const buttonHandlers = {
+                'newNodeBtn': this.createNewNode.bind(this),
+                'saveBtn': this.saveMindMap.bind(this),
+                'loadBtn': this.loadMindMap.bind(this),
+                'saveToFileBtn': this.saveToFile.bind(this),
+                'loadFromFileBtn': this.loadFromFile.bind(this),
+                'exportBtn': this.exportMindMap.bind(this),
+                'testContextMenuBtn': this.testContextMenu.bind(this)
+            };
+
+            // Set up event listeners for all buttons
+            Object.entries(buttonHandlers).forEach(([id, handler]) => {
+                const button = this.element.querySelector(`#${id}`);
+                if (button) {
+                    console.log(`Setting up handler for ${id}`);
+                    button.removeEventListener('click', handler); // Remove any existing handler
+                    button.addEventListener('click', (e) => {
+                        console.log(`Button clicked: ${id}`);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handler();
+                    });
+                } else {
+                    console.error(`Button not found: #${id}`);
+                }
+            });
+
+            console.log('Event listeners initialized successfully');
+        } catch (error) {
+            console.error('Error initializing event listeners:', error);
         }
     }
 
@@ -83,6 +93,94 @@ class Toolbar {
      */
     exportMindMap() {
         this.exportManager.export(this.mindMapManager.svg);
+    }
+
+    /**
+     * Save the mind map to a file
+     */
+    async saveToFile() {
+        console.log('saveToFile called');
+        try {
+            const data = this.mindMapManager.getData();
+            console.log('Mind map data:', data);
+            if (!data.nodes || data.nodes.length === 0) {
+                this.storageManager.showNotification('No mind map data to save!', true);
+                return;
+            }
+
+            // Create a unique filename with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `mindmap-${timestamp}.json`;
+            
+            console.log('Saving to file:', filename);
+            await this.storageManager.exportToFile(data, filename);
+            console.log('File save completed');
+        } catch (error) {
+            console.error('Error saving mind map to file:', error);
+            this.storageManager.showNotification('Error saving mind map to file!', true);
+        }
+    }
+
+    /**
+     * Load a mind map from a file
+     */
+    loadFromFile() {
+        console.log('loadFromFile called');
+        try {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.style.display = 'none';
+            
+            // Ensure old input is removed
+            const oldInput = document.querySelector('#fileInput');
+            if (oldInput) {
+                oldInput.remove();
+            }
+            
+            input.id = 'fileInput';
+            document.body.appendChild(input);
+            
+            const cleanup = () => {
+                if (document.body.contains(input)) {
+                    input.remove();
+                }
+            };
+            
+            input.onchange = async (e) => {
+                console.log('File selected');
+                const file = e.target.files[0];
+                if (file) {
+                    try {
+                        console.log('Loading file:', file.name);
+                        const data = await this.storageManager.importFromFile(file);
+                        console.log('File data:', data);
+                        if (data && data.nodes) {
+                            this.mindMapManager.loadData(data);
+                        } else {
+                            this.storageManager.showNotification('Invalid mind map file!', true);
+                        }
+                    } catch (error) {
+                        console.error('Error loading file:', error);
+                        this.storageManager.showNotification('Error loading file!', true);
+                    } finally {
+                        cleanup();
+                    }
+                }
+            };
+
+            // Handle cancellation
+            window.addEventListener('focus', () => {
+                // Wait a bit to see if a file was selected
+                setTimeout(cleanup, 1000);
+            }, { once: true });
+            
+            console.log('Triggering file dialog');
+            input.click();
+        } catch (error) {
+            console.error('Error in loadFromFile:', error);
+            this.storageManager.showNotification('Error loading file!', true);
+        }
     }
 
     /**

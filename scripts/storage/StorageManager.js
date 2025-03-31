@@ -91,26 +91,37 @@ class StorageManager {
      * Export mind map data to a file
      * @param {Object} data - The mind map data to export
      * @param {string} filename - The filename to use
+     * @returns {Promise<void>} - Promise that resolves when the file is downloaded
      */
     exportToFile(data, filename = 'mindmap.json') {
-        try {
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            this.showNotification('Mind map exported successfully!');
-        } catch (error) {
-            console.error('Error exporting mind map:', error);
-            this.showNotification('Error exporting mind map!', true);
-        }
+        return new Promise((resolve, reject) => {
+            try {
+                console.log('Exporting data:', data);
+                const jsonString = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                // Create link and trigger download
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+
+                // Use setTimeout to ensure the link is in the DOM
+                setTimeout(() => {
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    this.showNotification('Mind map exported successfully!');
+                    resolve();
+                }, 0);
+            } catch (error) {
+                console.error('Error exporting mind map:', error);
+                this.showNotification('Error exporting mind map!', true);
+                reject(error);
+            }
+        });
     }
 
     /**
